@@ -5,8 +5,14 @@ from shiny.express import input, render, ui
 from shinywidgets import render_plotly
 from shiny import render
 import plotly.graph_objects as go
+from shiny import reactive
 
 p_df = pp.load_penguins()
+
+#adding reactive element - funny because I used if elses for filtered data frames
+@reactive.calc
+def filtered_data():
+    return p_df
 
 ui.page_opts(title="Filling layout", fillable=True)
 
