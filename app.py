@@ -10,9 +10,15 @@ from shinywidgets import render_plotly
 p_df = pp.load_penguins()
 
 #Adding reactive block for global reactive functions - I am retarded and I hate this
+#There are issues with PyShiny and filtering a data frame with more than one filter - need to figure out later
 @reactive.calc
 def filtered_data():
-    return p_df
+    if input.radio() == "Yes":
+        filtered_df_species = p_df[p_df["species"].isin(input.check())]
+        return filtered_df_species
+    else:
+        filtered_df = p_df
+        return filtered_df
 
 #Page options
 ui.page_opts(title="Palmer Penguins Exploration", fillable=True)
@@ -27,6 +33,7 @@ with ui.sidebar(bg = "#808080"):
     with ui.card():
         ui.card_header("General Settings")
         ui.input_dark_mode()
+        ui.input_radio_buttons("radio","Filter Data Frame", ["Yes","No"])
     #Selection Settings for Graphs
     with ui.card():
         ui.card_header("Graph Interaction")
@@ -56,29 +63,28 @@ with ui.layout_columns():
         ui.card_header("Data Table")
         @render.data_frame
         def table_frame():
-            return render.DataTable(p_df)
+            return render.DataTable(filtered_data())
     #Data Grid
     with ui.card():
         ui.card_header("Data Grid")
         @render.data_frame
         def table_grid():
-            return render.DataGrid(p_df)
+            return render.DataGrid(filtered_data())
     #Histogram Plotly
     with ui.card():
         ui.card_header("Plotly Histogram")
         @render_plotly
         def plotly_hist():
-            return px.histogram(p_df, y= "species", nbins = input.slider_numb())
+            return px.histogram(filtered_data(), y= "species", nbins = input.slider_numb())
     #Histogram Seaborn
     with ui.card():
         ui.card_header("Seaborn Histogram")
         @render.plot
         def seaborn_hist():
-            return sb.histplot(p_df, y = "species", bins = input.slider_numb())
+            return sb.histplot(filtered_data(), y = "species", bins = input.slider_numb())
     #Scatterplot
     with ui.card():
         ui.card_header("Scatterplot")
         @render_plotly
         def scatter_plot():
-            return px.scatter(p_df, x="body_mass_g", y="flipper_length_mm", color="species")
-
+            return px.scatter(filtered_data(), x="body_mass_g", y="flipper_length_mm", color="species")
