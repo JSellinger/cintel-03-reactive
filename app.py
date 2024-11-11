@@ -1,104 +1,84 @@
+#Packaging imports
 import plotly.express as px
 import seaborn as sb
 import palmerpenguins as pp
+import shiny
 from shiny.express import input, render, ui
-from shinywidgets import render_plotly
-from shiny import render
-import plotly.graph_objects as go
 from shiny import reactive
+from shinywidgets import render_plotly
 
 p_df = pp.load_penguins()
 
-#adding reactive element - funny because I used if elses for filtered data frames
+#Adding reactive block for global reactive functions - I am retarded and I hate this
 @reactive.calc
 def filtered_data():
     return p_df
 
-ui.page_opts(title="Filling layout", fillable=True)
+#Page options
+ui.page_opts(title="Palmer Penguins Exploration", fillable=True)
 
-with ui.sidebar(bg="#808080"):
-    ui.h1("This is my sidebar - there are many like it but this one is mine")
-    ui.hr()
+#Sidebar layout
+with ui.sidebar(bg = "#808080"):
+    ui.h1("Settings and Selections")
+    "You can select settings and interact with the data graphs through this sidebar. The link to the Git repo is below:"
+    #Git repo link
     ui.a("Github", href="https://github.com/JSellinger", target="_blank")
-
-    ui.h2("Selection Settings")
+    #General Settings Card
     with ui.card():
-        ui.card_header("Settings")
+        ui.card_header("General Settings")
         ui.input_dark_mode()
-        ui.hr()
+    #Selection Settings for Graphs
     with ui.card():
-        ui.hr()
-        ui.card_header("Stupid Fricking Inputs")
-        ui.input_slider("n", "Slider for Bin ", 0, 100, 10)
-        ui.input_selectize(
-            "s", "Select Island for Scatterplot", ["Dream", "Biscoe", "Torgersen"]
-        )
-        ui.input_numeric("num", "Background Color", 0)
-        ui.input_checkbox_group(
-            "check", "Species for Data Grid/Table", ["Adelie", "Gentoo", "Chinstrap"]
-        )
+        ui.card_header("Graph Interaction")
+        #Slider
+        ui.input_slider("slider_numb", "Slider for Bins", 0, 100, 10)
+        #Selectize
+        ui.input_selectize("selectize", "Select Island for Scatterplot", ["Dream","Biscoe","Torgersen"])
+        #Numeric Input
+        ui.input_numeric("numeric", "To be Determined", 0)
+        #Check Box
+        ui.input_checkbox_group("check", "Species for Data Grid/Table", ["Adelie", "Gentoo", "Chinstrap"])
 
+#Function Block for Main Layout
+
+#Main Layout Column
+"Graphs and Data Visualization"
 with ui.layout_columns():
 
+    #It took me awhile to figure out what exactly the reactive.calc was doing but I figured it out.
+    #The reactive.calc function is simply turning it into a special return value that we are supposed to be returning in all our other functions that work with other react decorators and functions - this was not explained very well
+    #This means that we have to filter the data before we graph it though - which means it would change everything?
+    #Reactive Calc Function
+    
+    
+    #Data Table
     with ui.card():
         ui.card_header("Data Table")
-
         @render.data_frame
-        def table1():
-            selected_species = input.check()  # Get selected species from the checkbox
-            # Filter the DataFrame based on the selected species
-            if selected_species:
-                filtered_df = p_df[p_df["species"].isin(selected_species)]
-            else:
-                filtered_df = (
-                    p_df  # Return the full DataFrame if no species are selected
-                )
-            return render.DataTable(filtered_df)  # Return the filtered DataFrame
-
+        def table_frame():
+            return render.DataTable(p_df)
+    #Data Grid
     with ui.card():
         ui.card_header("Data Grid")
-
         @render.data_frame
-        def datagrid1():
-            selected_species = input.check()  # Get selected species from the checkbox
-            # Filter the DataFrame based on the selected species
-            if selected_species:
-                filtered_df = p_df[p_df["species"].isin(selected_species)]
-            else:
-                filtered_df = (
-                    p_df  # Return the full DataFrame if no species are selected
-                )
-            return render.DataGrid(filtered_df)  # Return the filtered DataFrame
-
-
-with ui.layout_columns():
-
+        def table_grid():
+            return render.DataGrid(p_df)
+    #Histogram Plotly
     with ui.card():
-        ui.card_header("Plotly Histogram - Species")
-
+        ui.card_header("Plotly Histogram")
         @render_plotly
-        def plot1():
-            num_n = input.n()
-            return px.histogram(p_df, y="species", nbins=num_n)
-
+        def plotly_hist():
+            return px.histogram(p_df, y= "species", nbins = input.slider_numb())
+    #Histogram Seaborn
     with ui.card():
-        ui.card_header("Seaborn Histogram - Species")
-
+        ui.card_header("Seaborn Histogram")
         @render.plot
-        def plot2():
-            return sb.histplot(p_df, y="species", bins=input.n())
-
+        def seaborn_hist():
+            return sb.histplot(p_df, y = "species", bins = input.slider_numb())
+    #Scatterplot
     with ui.card():
-
+        ui.card_header("Scatterplot")
         @render_plotly
-        def plot3():
-            s_lands = [input.s()]
+        def scatter_plot():
+            return px.scatter(p_df, x="body_mass_g", y="flipper_length_mm", color="species")
 
-            if s_lands:
-                filtered_df = p_df[p_df["island"].isin(s_lands)]
-            else:
-                filtered_df = p_df
-
-            return px.scatter(
-                filtered_df, x="body_mass_g", y="flipper_length_mm", color="species"
-            )
